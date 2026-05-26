@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Calculadora de Incapacidad Laboral</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <h1>Calculadora de Incapacidad</h1>
+    <span class="subtitle">VIB + RIPTE + Tasa de interés</span>
+  </div>
+  <nav class="tabs">
+    <button class="tab active" data-view="calc">Calculadora</button>
+    <button class="tab" data-view="admin">Administración</button>
+  </nav>
+</header>
+
+<main id="view-calc" class="view">
+  <section class="card">
+    <h2>Datos del siniestro</h2>
+    <div class="grid grid-3">
+      <label>Nombre
+        <input type="text" id="nombre" placeholder="Apellido, Nombre" />
+      </label>
+      <label>Fecha del siniestro
+        <input type="date" id="fechaSiniestro" />
+      </label>
+      <label>Edad del trabajador
+        <input type="number" id="edad" min="14" max="100" step="1" placeholder="ej. 35" />
+      </label>
+      <label>% Incapacidad
+        <input type="number" id="incapacidad" min="0" max="100" step="0.01" placeholder="ej. 2.5" />
+        <small>Se ingresa en %, se convierte a decimal.</small>
+      </label>
+      <label>¿Es in itinere?
+        <select id="enItinere">
+          <option value="si">Sí</option>
+          <option value="no">No</option>
+        </select>
+      </label>
+      <label>Período base (mes del siniestro)
+        <input type="text" id="periodoBase" readonly placeholder="—" />
+      </label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Sueldos de los últimos 12 meses</h2>
+    <p class="hint">Ingresá el sueldo bruto mensual. La app actualiza cada sueldo con el coeficiente RIPTE.</p>
+    <div class="table-wrap">
+      <table id="tblSueldos" class="data">
+        <thead>
+          <tr>
+            <th>Período</th>
+            <th>Sueldo</th>
+            <th>RIPTE período</th>
+            <th>Coeficiente</th>
+            <th>Sueldo actualizado</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" class="right"><strong>VIB (promedio actualizado)</strong></td>
+            <td id="vibCell" class="num">—</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div id="ripteWarn" class="warn hidden"></div>
+  </section>
+
+  <section class="card">
+    <h2>Tasa de interés</h2>
+    <div class="grid grid-2">
+      <label>Monto de tasa de interés
+        <input type="number" id="tasaManual" step="0.01" placeholder="0,00" />
+        <small>Ingresá el monto manualmente.</small>
+      </label>
+    </div>
+  </section>
+
+  <section class="card result">
+    <h2>Resultado</h2>
+    <div class="grid grid-4">
+      <div class="kpi"><span>VIB</span><strong id="kpiVib">—</strong></div>
+      <div class="kpi"><span>VIB + Tasa</span><strong id="kpiVibTasa">—</strong></div>
+      <div class="kpi"><span>Factor edad (65/edad)</span><strong id="kpiFactorEdad">—</strong></div>
+      <div class="kpi total"><span>Resultado final</span><strong id="kpiResultado">—</strong></div>
+    </div>
+    <div class="formula-eval">
+      <span class="lbl">Fórmula aplicada:</span>
+      <code id="formulaPreview">—</code>
+    </div>
+    <div class="actions">
+      <button id="btnCalcular" class="primary">Calcular</button>
+      <button id="btnDescargar">Descargar Excel</button>
+      <button id="btnLimpiar">Limpiar</button>
+    </div>
+  </section>
+</main>
+
+<main id="view-admin" class="view hidden">
+  <section class="card">
+    <h2>Fórmula de cálculo</h2>
+    <p class="hint">Variables disponibles:
+      <code>VIB</code>, <code>TASA</code>, <code>INC</code> (decimal), <code>EDAD</code>,
+      <code>FACTOR_EDAD</code> (=65/EDAD), <code>EN_ITINERE</code> (true/false).
+      Función disponible: <code>IF(cond, a, b)</code>. Operadores: <code>+ - * /</code>, paréntesis,
+      comparaciones <code>&gt; &lt; &gt;= &lt;= == !=</code>.
+    </p>
+    <textarea id="formulaEditor" rows="4" spellcheck="false"></textarea>
+    <div class="actions">
+      <button id="btnGuardarFormula" class="primary">Guardar fórmula</button>
+      <button id="btnResetFormula">Restaurar por defecto</button>
+      <span id="formulaStatus" class="status"></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>RIPTE</h2>
+    <p class="hint">Tabla con el índice RIPTE por período (mes). Podés subir un Excel con columnas
+      <code>Período</code> e <code>Índice</code>.</p>
+    <div class="actions">
+      <label class="btn-file">
+        <input type="file" id="uploadRipte" accept=".xlsx,.xls,.csv" hidden />
+        Subir Excel/CSV
+      </label>
+      <button id="btnAddRipte">Agregar fila</button>
+      <button id="btnExportRipte">Exportar JSON</button>
+      <input type="search" id="searchRipte" placeholder="Filtrar período…" />
+      <span id="ripteStatus" class="status"></span>
+    </div>
+    <div class="table-wrap scroll">
+      <table id="tblRipte" class="data editable">
+        <thead><tr><th>Período (YYYY-MM)</th><th>Índice</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card danger">
+    <h2>Zona peligrosa</h2>
+    <p class="hint">Restablece la configuración (RIPTE y fórmula) a los valores semilla del Excel original.</p>
+    <button id="btnResetAll" class="danger-btn">Restablecer todo</button>
+  </section>
+</main>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<script src="seed-data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
