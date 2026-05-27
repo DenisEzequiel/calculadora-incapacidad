@@ -16,6 +16,7 @@
     <button class="tab active" data-view="calc">Calculadora</button>
     <button class="tab" data-view="admin">Administración</button>
   </nav>
+  <button id="btnTheme" class="theme-toggle" type="button" aria-pressed="false" aria-label="Cambiar a modo oscuro" title="Cambiar tema">☾</button>
 </header>
 
 <main id="view-calc" class="view">
@@ -97,6 +98,7 @@
     </div>
     <div class="actions">
       <button id="btnCalcular" class="primary">Calcular</button>
+      <button id="btnDescargarPdf">Descargar PDF</button>
       <button id="btnDescargar">Descargar Excel</button>
       <button id="btnLimpiar">Limpiar</button>
     </div>
@@ -150,6 +152,7 @@
 </main>
 
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="seed-data.js"></script>
 <script src="app.js"></script>
 </body>

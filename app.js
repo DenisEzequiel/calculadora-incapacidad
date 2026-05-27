@@ -20,6 +20,7 @@ const DEFAULT_FORMULA =
 const STORAGE = {
   ripte: "calc-incap.ripte",
   formula: "calc-incap.formula",
+  theme: "calc-incap.theme",
 };
 
 // ---------- Persistencia ----------
@@ -118,10 +119,44 @@ const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
 document.addEventListener("DOMContentLoaded", () => {
+  applyTheme(getPreferredTheme());
   setupTabs();
+  setupThemeToggle();
   setupCalc();
   setupAdmin();
 });
+
+function getPreferredTheme() {
+  const stored = loadStore(STORAGE.theme, null);
+  if (stored === "light" || stored === "dark") return stored;
+  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyTheme(theme) {
+  const normalized = theme === "dark" ? "dark" : "light";
+  document.body.classList.toggle("theme-dark", normalized === "dark");
+  document.body.classList.toggle("theme-light", normalized === "light");
+  document.body.style.colorScheme = normalized;
+
+  const btn = $("#btnTheme");
+  if (btn) {
+    const isDark = normalized === "dark";
+    btn.textContent = isDark ? "☀" : "☾";
+    btn.setAttribute("aria-pressed", String(isDark));
+    btn.setAttribute("aria-label", isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro");
+    btn.setAttribute("title", isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro");
+  }
+}
+
+function setupThemeToggle() {
+  const btn = $("#btnTheme");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    const nextTheme = document.body.classList.contains("theme-dark") ? "light" : "dark";
+    saveStore(STORAGE.theme, nextTheme);
+    applyTheme(nextTheme);
+  });
+}
 
 function setupTabs() {
   $$(".tab").forEach(btn => {
@@ -145,6 +180,7 @@ function setupTabs() {
 function setupCalc() {
   $("#fechaSiniestro").addEventListener("change", onSiniestroChange);
   $("#btnCalcular").addEventListener("click", calcular);
+  $("#btnDescargarPdf").addEventListener("click", descargarPdf);
   $("#btnDescargar").addEventListener("click", descargarExcel);
   $("#btnLimpiar").addEventListener("click", () => {
     if (!confirm("¿Limpiar todos los campos?")) return;
@@ -290,6 +326,165 @@ function calcular() {
   $("#formulaPreview").textContent =
     `${FORMULA}  →  VIB=${fmtNum.format(vib)}, TASA=${fmtNum.format(tasaMonto)}, ` +
     `INC=${incDec}, EDAD=${edad}, EN_ITINERE=${enItinere}  =  ${fmtMoney.format(resultado)}`;
+}
+
+// =============================================================
+// Descarga a PDF - informe de lo mostrado en pantalla
+// =============================================================
+function assertResultadoCalculado() {
+  const resultado = $("#kpiResultado").textContent.trim();
+  if (!resultado || resultado === "—" || resultado === "â€”") {
+    alert("Primero realiza el calculo para generar el informe.");
+    return false;
+  }
+  return true;
+}
+
+function pdfSafeFileName(name) {
+  return (name || "calculo")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s.-]/g, "")
+    .trim() || "calculo";
+}
+
+function descargarPdf() {
+  if (!assertResultadoCalculado()) return;
+
+  const jsPDF = window.jspdf && window.jspdf.jsPDF;
+  if (!jsPDF) {
+    alert("No se pudo cargar la libreria para generar PDF. Revisa la conexion e intenta nuevamente.");
+    return;
+  }
+
+  const nombre = ($("#nombre").value || "").trim() || "Sin nombre";
+  const fechaSiniestro = $("#fechaSiniestro").value || "-";
+  const edad = $("#edad").value || "-";
+  const incapacidad = $("#incapacidad").value || "-";
+  const enItinere = $("#enItinere").value === "si" ? "Si" : "No";
+  const periodoBase = $("#periodoBase").value || "-";
+  const tasa = getTasaMonto();
+  const stamp = new Date().toLocaleDateString("es-AR");
+
+  const sueldoRows = $$("#tblSueldos tbody tr").map(tr => ({
+    periodo: tr.dataset.periodo || "-",
+    sueldo: tr.querySelector("input.sueldo").value || "-",
+    ripte: tr.children[2].textContent || "-",
+    coef: tr.querySelector(".coef").textContent || "-",
+    actual: tr.querySelector(".actual").textContent || "-",
+  }));
+
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 14;
+  let y = 16;
+
+  const addFooter = () => {
+    const page = doc.internal.getNumberOfPages();
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text(`Generado el ${stamp}`, margin, pageHeight - 8);
+    doc.text(`Pagina ${page}`, pageWidth - margin, pageHeight - 8, { align: "right" });
+    doc.setTextColor(0);
+  };
+  const ensureSpace = (height) => {
+    if (y + height <= pageHeight - 16) return;
+    addFooter();
+    doc.addPage();
+    y = 16;
+  };
+  const line = (left, right, xRight = 78) => {
+    ensureSpace(7);
+    doc.setFont("helvetica", "bold");
+    doc.text(left, margin, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(right), xRight, y);
+    y += 7;
+  };
+  const sectionTitle = (title) => {
+    ensureSpace(11);
+    y += 3;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(title, margin, y);
+    y += 7;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+  };
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("Informe de calculo de incapacidad", margin, y);
+  y += 8;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(`Trabajador: ${nombre}`, margin, y);
+  y += 6;
+  doc.setTextColor(90);
+  doc.text("Valores generados a partir de los datos visibles en la calculadora.", margin, y);
+  doc.setTextColor(0);
+  y += 5;
+
+  sectionTitle("Datos del siniestro");
+  line("Fecha del siniestro", fechaSiniestro);
+  line("Periodo base", periodoBase);
+  line("Edad", edad);
+  line("% Incapacidad", incapacidad);
+  line("Es in itinere", enItinere);
+  line("Tasa de interes", fmtMoney.format(tasa));
+
+  sectionTitle("Resultado");
+  line("VIB", $("#kpiVib").textContent);
+  line("VIB + Tasa", $("#kpiVibTasa").textContent);
+  line("Factor edad", $("#kpiFactorEdad").textContent);
+  line("Resultado final", $("#kpiResultado").textContent);
+
+  sectionTitle("Formula aplicada");
+  const formulaText = $("#formulaPreview").textContent || "-";
+  const formulaLines = doc.splitTextToSize(formulaText, pageWidth - margin * 2);
+  ensureSpace(formulaLines.length * 5 + 2);
+  doc.setFont("courier", "normal");
+  doc.setFontSize(8.5);
+  doc.text(formulaLines, margin, y);
+  y += formulaLines.length * 5 + 2;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+
+  sectionTitle("Sueldos actualizados");
+  const headers = ["Periodo", "Sueldo", "RIPTE", "Coef.", "Actualizado"];
+  const colX = [margin, 47, 82, 112, 140];
+  const colW = [31, 31, 24, 23, 52];
+  const drawTableHeader = () => {
+    ensureSpace(8);
+    doc.setFillColor(242, 245, 249);
+    doc.rect(margin, y - 5, pageWidth - margin * 2, 7, "F");
+    doc.setFont("helvetica", "bold");
+    headers.forEach((h, i) => doc.text(h, colX[i], y));
+    doc.setFont("helvetica", "normal");
+    y += 7;
+  };
+
+  drawTableHeader();
+  sueldoRows.forEach(row => {
+    ensureSpace(7);
+    if (y < 22) drawTableHeader();
+    const vals = [row.periodo, row.sueldo, row.ripte, row.coef, row.actual];
+    vals.forEach((val, i) => {
+      const text = doc.splitTextToSize(String(val), colW[i])[0] || "";
+      doc.text(text, colX[i], y);
+    });
+    y += 6;
+  });
+  ensureSpace(7);
+  doc.setFont("helvetica", "bold");
+  doc.text("VIB promedio actualizado", margin, y);
+  doc.text($("#vibCell").textContent || "-", pageWidth - margin, y, { align: "right" });
+  doc.setFont("helvetica", "normal");
+
+  addFooter();
+  const dateSuffix = new Date().toISOString().slice(0, 10);
+  doc.save(`${pdfSafeFileName(nombre)} - informe incapacidad ${dateSuffix}.pdf`);
 }
 
 // =============================================================
