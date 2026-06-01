@@ -29,8 +29,9 @@
       <label>Fecha del siniestro
         <input type="date" id="fechaSiniestro" />
       </label>
-      <label>Edad del trabajador
-        <input type="number" id="edad" min="14" max="100" step="1" placeholder="ej. 35" />
+      <label>Fecha de nacimiento
+        <input type="date" id="fechaNacimiento" />
+        <small id="edadCalculada">La edad se calcula a la fecha del siniestro.</small>
       </label>
       <label>% Incapacidad
         <input type="number" id="incapacidad" min="0" max="100" step="0.01" placeholder="ej. 2.5" />
@@ -84,17 +85,44 @@
     </div>
   </section>
 
+  <section class="card">
+    <h2>Fórmula de sentencia</h2>
+    <p class="hint">Interés adicional que se suma al resultado:
+      <code>monto × tasa anual × (días desde siniestro / 365)</code>.
+      Dejá la tasa anual vacía o en 0 para no aplicar este interés.
+    </p>
+    <div class="grid grid-2">
+      <label>Tasa anual (%)
+        <input type="number" id="tasaAnual" step="0.01" placeholder="ej. 60" />
+        <small>Se ingresa en %, se convierte a decimal (60 → 0,60).</small>
+      </label>
+      <label>Fecha hasta
+        <input type="date" id="fechaHasta" />
+        <small>Por defecto, la fecha de hoy.</small>
+      </label>
+    </div>
+  </section>
+
   <section class="card result">
     <h2>Resultado</h2>
     <div class="grid grid-4">
       <div class="kpi"><span>VIB</span><strong id="kpiVib">—</strong></div>
       <div class="kpi"><span>VIB + Tasa</span><strong id="kpiVibTasa">—</strong></div>
       <div class="kpi"><span>Factor edad (65/edad)</span><strong id="kpiFactorEdad">—</strong></div>
-      <div class="kpi total"><span>Resultado final</span><strong id="kpiResultado">—</strong></div>
+      <div class="kpi"><span>Resultado fórmula</span><strong id="kpiResultado">—</strong></div>
+    </div>
+    <div class="grid grid-3" style="margin-top: 12px;">
+      <div class="kpi"><span>Días desde siniestro</span><strong id="kpiDias">—</strong></div>
+      <div class="kpi"><span>Interés sentencia</span><strong id="kpiInteresSentencia">—</strong></div>
+      <div class="kpi total"><span>Total final</span><strong id="kpiTotal">—</strong></div>
     </div>
     <div class="formula-eval">
       <span class="lbl">Fórmula aplicada:</span>
       <code id="formulaPreview">—</code>
+    </div>
+    <div class="formula-eval">
+      <span class="lbl">Fórmula de sentencia:</span>
+      <code id="sentenciaPreview">—</code>
     </div>
     <div class="actions">
       <button id="btnCalcular" class="primary">Calcular</button>

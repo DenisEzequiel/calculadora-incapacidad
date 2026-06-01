@@ -60,6 +60,27 @@ function addMonths(date, n) {
   d.setUTCMonth(d.getUTCMonth() + n);
   return d;
 }
+function todayUTC() {
+  const t = new Date();
+  return new Date(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate()));
+}
+function diffDays(from, to) {
+  const ms = to.getTime() - from.getTime();
+  return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
+}
+function calcEdad(nacimiento, ref) {
+  if (!nacimiento || !ref) return NaN;
+  let edad = ref.getUTCFullYear() - nacimiento.getUTCFullYear();
+  const m = ref.getUTCMonth() - nacimiento.getUTCMonth();
+  if (m < 0 || (m === 0 && ref.getUTCDate() < nacimiento.getUTCDate())) edad--;
+  return edad;
+}
+function isoOfUTC(date) {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(date.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
 function toNumber(x) {
   if (x === null || x === undefined || x === "") return NaN;
   if (typeof x === "number") return x;
@@ -179,27 +200,58 @@ function setupTabs() {
 // =============================================================
 function setupCalc() {
   $("#fechaSiniestro").addEventListener("change", onSiniestroChange);
+  $("#fechaSiniestro").addEventListener("change", actualizarEdadCalculada);
+  $("#fechaNacimiento").addEventListener("change", actualizarEdadCalculada);
   $("#btnCalcular").addEventListener("click", calcular);
   $("#btnDescargarPdf").addEventListener("click", descargarPdf);
   $("#btnDescargar").addEventListener("click", descargarExcel);
+  $("#fechaHasta").value = isoOfUTC(todayUTC());
   $("#btnLimpiar").addEventListener("click", () => {
     if (!confirm("¿Limpiar todos los campos?")) return;
     $("#nombre").value = "";
     $("#fechaSiniestro").value = "";
-    $("#edad").value = "";
+    $("#fechaNacimiento").value = "";
+    actualizarEdadCalculada();
     $("#incapacidad").value = "";
     $("#enItinere").value = "si";
     $("#periodoBase").value = "";
     $("#tblSueldos tbody").innerHTML = "";
     $("#vibCell").textContent = "—";
     $("#tasaManual").value = "";
+    $("#tasaAnual").value = "";
+    $("#fechaHasta").value = isoOfUTC(todayUTC());
     $("#kpiVib").textContent = "—";
     $("#kpiVibTasa").textContent = "—";
     $("#kpiFactorEdad").textContent = "—";
     $("#kpiResultado").textContent = "—";
+    $("#kpiDias").textContent = "—";
+    $("#kpiInteresSentencia").textContent = "—";
+    $("#kpiTotal").textContent = "—";
     $("#formulaPreview").textContent = "—";
+    $("#sentenciaPreview").textContent = "—";
     $("#ripteWarn").classList.add("hidden");
   });
+}
+
+function actualizarEdadCalculada() {
+  const el = $("#edadCalculada");
+  if (!el) return;
+  const fs = parseISODate($("#fechaSiniestro").value);
+  const fn = parseISODate($("#fechaNacimiento").value);
+  if (!fn) {
+    el.textContent = "La edad se calcula a la fecha del siniestro.";
+    return;
+  }
+  if (!fs) {
+    el.textContent = "Ingresá la fecha del siniestro para calcular la edad.";
+    return;
+  }
+  const edad = calcEdad(fn, fs);
+  if (isNaN(edad) || edad < 0) {
+    el.textContent = "Fecha de nacimiento inválida respecto al siniestro.";
+    return;
+  }
+  el.textContent = `Edad calculada: ${edad} años (a la fecha del siniestro).`;
 }
 
 function onSiniestroChange() {
@@ -291,8 +343,10 @@ function getTasaMonto() {
 function calcular() {
   const fs = parseISODate($("#fechaSiniestro").value);
   if (!fs) { alert("Ingresá la fecha del siniestro."); return; }
-  const edad = toNumber($("#edad").value);
-  if (!edad || edad <= 0) { alert("Ingresá una edad válida."); return; }
+  const fechaNac = parseISODate($("#fechaNacimiento").value);
+  if (!fechaNac) { alert("Ingresá la fecha de nacimiento."); return; }
+  const edad = calcEdad(fechaNac, fs);
+  if (!edad || edad <= 0) { alert("La fecha de nacimiento no es válida respecto a la fecha del siniestro."); return; }
   const incPct = toNumber($("#incapacidad").value);
   if (isNaN(incPct) || incPct < 0) { alert("Ingresá un % de incapacidad válido."); return; }
   const enItinere = $("#enItinere").value === "si";
@@ -319,13 +373,28 @@ function calcular() {
     return;
   }
 
+  // --- Fórmula de sentencia: interés adicional ---
+  const tasaAnualPct = toNumber($("#tasaAnual").value);
+  const tasaAnualDec = isNaN(tasaAnualPct) ? 0 : tasaAnualPct / 100;
+  const fechaHasta = parseISODate($("#fechaHasta").value) || todayUTC();
+  const dias = diffDays(fs, fechaHasta);
+  const interesSentencia = resultado * tasaAnualDec * (dias / 365);
+  const total = resultado + interesSentencia;
+
   $("#kpiVib").textContent = fmtMoney.format(vib);
   $("#kpiVibTasa").textContent = fmtMoney.format(vib + tasaMonto);
   $("#kpiFactorEdad").textContent = fmtNum.format(factorEdad);
   $("#kpiResultado").textContent = fmtMoney.format(resultado);
+  $("#kpiDias").textContent = String(dias);
+  $("#kpiInteresSentencia").textContent = fmtMoney.format(interesSentencia);
+  $("#kpiTotal").textContent = fmtMoney.format(total);
   $("#formulaPreview").textContent =
     `${FORMULA}  →  VIB=${fmtNum.format(vib)}, TASA=${fmtNum.format(tasaMonto)}, ` +
     `INC=${incDec}, EDAD=${edad}, EN_ITINERE=${enItinere}  =  ${fmtMoney.format(resultado)}`;
+  $("#sentenciaPreview").textContent =
+    `${fmtMoney.format(resultado)} × ${fmtNum.format(tasaAnualDec)} × (${dias} / 365) = ` +
+    `${fmtMoney.format(interesSentencia)}  →  Total: ${fmtMoney.format(resultado)} + ` +
+    `${fmtMoney.format(interesSentencia)} = ${fmtMoney.format(total)}`;
 }
 
 // =============================================================
@@ -357,9 +426,19 @@ function descargarPdf() {
     return;
   }
 
+  const fmtFechaPdf = (iso) => {
+    if (!iso) return "-";
+    const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
+  };
+
   const nombre = ($("#nombre").value || "").trim() || "Sin nombre";
-  const fechaSiniestro = $("#fechaSiniestro").value || "-";
-  const edad = $("#edad").value || "-";
+  const fechaSiniestro = fmtFechaPdf($("#fechaSiniestro").value);
+  const fechaNacimiento = fmtFechaPdf($("#fechaNacimiento").value);
+  const fsDate = parseISODate($("#fechaSiniestro").value);
+  const fnDate = parseISODate($("#fechaNacimiento").value);
+  const edadCalc = (fnDate && fsDate) ? calcEdad(fnDate, fsDate) : NaN;
+  const edad = isNaN(edadCalc) ? "-" : String(edadCalc);
   const incapacidad = $("#incapacidad").value || "-";
   const enItinere = $("#enItinere").value === "si" ? "Si" : "No";
   const periodoBase = $("#periodoBase").value || "-";
@@ -421,14 +500,11 @@ function descargarPdf() {
   doc.setFontSize(10);
   doc.text(`Trabajador: ${nombre}`, margin, y);
   y += 6;
-  doc.setTextColor(90);
-  doc.text("Valores generados a partir de los datos visibles en la calculadora.", margin, y);
-  doc.setTextColor(0);
-  y += 5;
 
   sectionTitle("Datos del siniestro");
   line("Fecha del siniestro", fechaSiniestro);
   line("Periodo base", periodoBase);
+  line("Fecha de nacimiento", fechaNacimiento);
   line("Edad", edad);
   line("% Incapacidad", incapacidad);
   line("Es in itinere", enItinere);
@@ -438,45 +514,55 @@ function descargarPdf() {
   line("VIB", $("#kpiVib").textContent);
   line("VIB + Tasa", $("#kpiVibTasa").textContent);
   line("Factor edad", $("#kpiFactorEdad").textContent);
-  line("Resultado final", $("#kpiResultado").textContent);
+  line("Resultado formula", $("#kpiResultado").textContent);
+  line("Dias desde siniestro", $("#kpiDias").textContent);
+  line("Interes sentencia", $("#kpiInteresSentencia").textContent);
+  line("Total final", $("#kpiTotal").textContent);
+
+  const normalizePdf = (s) => (s || "-")
+    .replace(/→/g, "->")
+    .replace(/×/g, "x")
+    .replace(/\s+/g, " ")
+    .trim();
 
   sectionTitle("Formula aplicada");
-  const formulaText = $("#formulaPreview").textContent || "-";
-  const formulaLines = doc.splitTextToSize(formulaText, pageWidth - margin * 2);
+  const formulaLines = doc.splitTextToSize(normalizePdf($("#formulaPreview").textContent), pageWidth - margin * 2);
   ensureSpace(formulaLines.length * 5 + 2);
-  doc.setFont("courier", "normal");
-  doc.setFontSize(8.5);
   doc.text(formulaLines, margin, y);
   y += formulaLines.length * 5 + 2;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
+
+  sectionTitle("Formula de sentencia");
+  const sentenciaLines = doc.splitTextToSize(normalizePdf($("#sentenciaPreview").textContent), pageWidth - margin * 2);
+  ensureSpace(sentenciaLines.length * 5 + 2);
+  doc.text(sentenciaLines, margin, y);
+  y += sentenciaLines.length * 5 + 2;
 
   sectionTitle("Sueldos actualizados");
   const headers = ["Periodo", "Sueldo", "RIPTE", "Coef.", "Actualizado"];
   const colX = [margin, 47, 82, 112, 140];
   const colW = [31, 31, 24, 23, 52];
   const drawTableHeader = () => {
-    ensureSpace(8);
+    ensureSpace(6);
     doc.setFillColor(242, 245, 249);
-    doc.rect(margin, y - 5, pageWidth - margin * 2, 7, "F");
+    doc.rect(margin, y - 4, pageWidth - margin * 2, 5.5, "F");
     doc.setFont("helvetica", "bold");
     headers.forEach((h, i) => doc.text(h, colX[i], y));
     doc.setFont("helvetica", "normal");
-    y += 7;
+    y += 5;
   };
 
   drawTableHeader();
   sueldoRows.forEach(row => {
-    ensureSpace(7);
+    ensureSpace(5);
     if (y < 22) drawTableHeader();
     const vals = [row.periodo, row.sueldo, row.ripte, row.coef, row.actual];
     vals.forEach((val, i) => {
       const text = doc.splitTextToSize(String(val), colW[i])[0] || "";
       doc.text(text, colX[i], y);
     });
-    y += 6;
+    y += 5;
   });
-  ensureSpace(7);
+  ensureSpace(5);
   doc.setFont("helvetica", "bold");
   doc.text("VIB promedio actualizado", margin, y);
   doc.text($("#vibCell").textContent || "-", pageWidth - margin, y, { align: "right" });
@@ -692,11 +778,15 @@ function descargarExcel() {
     return;
   }
 
-  const edad = toNumber($("#edad").value);
+  const fechaNac = parseISODate($("#fechaNacimiento").value);
+  const edad = fechaNac ? calcEdad(fechaNac, fs) : NaN;
   const incPct = toNumber($("#incapacidad").value);
   const incDec = isNaN(incPct) ? 0 : incPct / 100;
   const enItinere = $("#enItinere").value === "si" ? "si" : "no";
   const tasaMonto = getTasaMonto();
+  const tasaAnualPct = toNumber($("#tasaAnual").value);
+  const tasaAnualDec = isNaN(tasaAnualPct) ? 0 : tasaAnualPct / 100;
+  const fechaHasta = parseISODate($("#fechaHasta").value) || todayUTC();
 
   // Recolectar las 12 filas de sueldo (de más reciente a más antiguo, igual que el Excel original)
   const sueldoRows = [];
@@ -772,15 +862,31 @@ function descargarExcel() {
 
   setCell("A27", { t: "s", v: "en intinere" });
   setCell("B27", { t: "s", v: enItinere });
-  setCell("D27", { t: "s", v: "Resultado Final" });
+  setCell("D27", { t: "s", v: "Resultado fórmula" });
   setCell("E27", { t: "n", f: translateFormulaToExcel(FORMULA) });
 
-  // Lista de validación opcional en celdas auxiliares (como en el original A31/A32)
-  setCell("A31", { t: "s", v: "si" });
-  setCell("A32", { t: "s", v: "no" });
+  // Fórmula de sentencia: monto × tasa anual × (días / 365)
+  setCell("A28", { t: "s", v: "tasa anual" });
+  setCell("B28", { t: "n", v: tasaAnualDec, z: "0.00%" });
+
+  setCell("A29", { t: "s", v: "fecha hasta" });
+  setCell("B29", { t: "d", v: fechaHasta, z: "yyyy-mm-dd" });
+
+  setCell("A30", { t: "s", v: "días desde siniestro" });
+  setCell("B30", { t: "n", f: "B29-B26" });
+
+  setCell("D30", { t: "s", v: "Interés sentencia" });
+  setCell("E30", { t: "n", f: "E27*B28*(B30/365)" });
+
+  setCell("D31", { t: "s", v: "Total final" });
+  setCell("E31", { t: "n", f: "E27+E30" });
+
+  // Lista de validación opcional en celdas auxiliares
+  setCell("A33", { t: "s", v: "si" });
+  setCell("A34", { t: "s", v: "no" });
 
   // Rango usado por la hoja
-  ws["!ref"] = "A1:E32";
+  ws["!ref"] = "A1:E34";
   // Anchos de columna razonables
   ws["!cols"] = [
     { wch: 22 }, // A
