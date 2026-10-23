@@ -1,0 +1,93 @@
+# Índice de cobertura de documentación — <proyecto>
+# Generado por el skill sdd-documentacion-arquitectura en modo exhaustivo.
+# NO editar a mano las entradas documentadas — se actualiza en cada tanda.
+# Para forzar la regeneración de un documento: cambiar su status a "pending".
+#
+# Frescura: ref_branch + commit_hash indican contra qué versión del código se generó cada doc.
+# En cada corrida, las entradas 'documented' se revalidan contra la branch de referencia
+# (rama base de §1 del perfil del proyecto). Si los source_paths cambiaron en esa branch desde el
+# commit_hash guardado, la entrada pasa a 'stale' y se regenera.
+# Nunca borrar entradas: 'skipped' (con skip_reason) también es información.
+
+# NOTA: las entradas de abajo son EJEMPLOS ilustrativos (un backend con eje "dominio").
+# Reemplazarlas por las unidades reales del inventario E1 de ESTE repo, agrupadas por el eje
+# de §6 del perfil, con las rutas reales de §4.
+
+proyecto: "<proyecto>"
+ref_branch: "<DOC_REF_BRANCH>"
+eje: "<modulo | dominio | servicio | feature>"
+
+entries:
+
+  # --- Domain Summaries (una por valor del eje de §6) ---
+  - id: "domain-summary-pagos"
+    type: domain-summary
+    eje: pagos
+    name: "Dominio Pagos"
+    status: pending                   # documented | pending | skipped | stale
+    output: "docs/conceptos/pagos/domain-summary-pagos.md"
+    source_paths:
+      - "src/payments"
+    skip_reason: ""
+    ref_branch: ""                    # branch de referencia al documentar
+    commit_hash: ""                   # último commit de ref_branch que tocó source_paths
+    last_updated: ""                  # AAAA-MM-DD
+
+  # --- Módulos transversales (ejemplo ya documentado) ---
+  - id: "module-notificaciones"
+    type: module
+    eje: transversal
+    name: "Notificaciones"
+    status: documented
+    output: "docs/conceptos/notificaciones/module-notificaciones.md"
+    source_paths:
+      - "src/notifications"
+    skip_reason: ""
+    ref_branch: "main"
+    commit_hash: "a1b2c3d"
+    last_updated: "2026-06-01"
+
+  # --- Flows (ejemplo pendiente) ---
+  - id: "flow-pagos-webhook-proveedor"
+    type: flow
+    eje: pagos
+    name: "Recepción del webhook del proveedor de pagos"
+    status: pending
+    output: "docs/conceptos/pagos/flow-pagos-webhook-proveedor.md"
+    source_paths:
+      - "src/payments/webhooks"
+      - "src/payments/payment.service.ts"
+    skip_reason: ""
+    ref_branch: ""
+    commit_hash: ""
+    last_updated: ""
+
+  # --- ADRs (ejemplo) ---
+  - id: "adr-007-outbox-para-eventos"
+    type: adr
+    eje: transversal
+    name: "Outbox transaccional para publicar eventos"
+    status: pending
+    output: "docs/adr/ADR-007-outbox-para-eventos.md"
+    source_paths:
+      - "src/shared/outbox"
+    skip_reason: ""
+    ref_branch: ""
+    commit_hash: ""
+    last_updated: ""
+
+  # --- Código generado / vendorizado (§3): se inventaría, no se documenta como lógica propia ---
+  - id: "module-cliente-api-generado"
+    type: module
+    eje: transversal
+    name: "Cliente OpenAPI generado"
+    status: skipped
+    output: ""
+    source_paths:
+      - "src/generated/api-client"
+    skip_reason: "código generado (§3 del perfil); se cita desde los módulos que lo consumen"
+    ref_branch: ""
+    commit_hash: ""
+    last_updated: ""
+
+  # --- Agregar entradas según el inventario E1 ---

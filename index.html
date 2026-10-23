@@ -10,12 +10,13 @@
 <header class="topbar">
   <div class="brand">
     <h1>Calculadora de Incapacidad</h1>
-    <span class="subtitle">VIB + RIPTE + Tasa de interés</span>
+    <span class="subtitle">VIB + RIPTE (1) + RIPTE (2) + piso mínimo</span>
   </div>
   <nav class="tabs">
     <button class="tab active" data-view="calc">Calculadora</button>
     <button class="tab" data-view="admin">Administración</button>
   </nav>
+  <a class="guide-link" href="docs/guia.html" target="_blank" rel="noopener" title="Cómo se calcula, se usa y se administra">Guía ↗</a>
   <button id="btnTheme" class="theme-toggle" type="button" aria-pressed="false" aria-label="Cambiar a modo oscuro" title="Cambiar tema">☾</button>
 </header>
 
@@ -46,16 +47,23 @@
       <label>Período base (mes del siniestro)
         <input type="text" id="periodoBase" readonly placeholder="—" />
       </label>
+      <label>Fecha de liquidación (puesta a disposición)
+        <input type="date" id="fechaLiquidacion" />
+        <small>Cierra el período del RIPTE (2) y actualiza el piso mínimo.</small>
+      </label>
     </div>
   </section>
 
   <section class="card">
     <h2>Sueldos de los últimos 12 meses</h2>
-    <p class="hint">Ingresá el sueldo bruto mensual. La app actualiza cada sueldo con el coeficiente RIPTE.</p>
+    <p class="hint">Ingresá el sueldo bruto mensual. Cada sueldo se lleva al mes de la PMI por cociente
+      de índices RIPTE (art. 12 inc. 1). El promedio se divide por los meses marcados como
+      <em>Incluido</em> (los 12 por defecto); destildá un mes para dejarlo fuera de la suma y del divisor.</p>
     <div class="table-wrap">
       <table id="tblSueldos" class="data">
         <thead>
           <tr>
+            <th class="center">Incluido</th>
             <th>Período</th>
             <th>Sueldo</th>
             <th>RIPTE período</th>
@@ -66,23 +74,75 @@
         <tbody></tbody>
         <tfoot>
           <tr>
-            <td colspan="4" class="right"><strong>VIB (promedio actualizado)</strong></td>
+            <td colspan="5" class="right"><strong>VIB (promedio actualizado<span id="vibDivisor"></span>)</strong></td>
             <td id="vibCell" class="num">—</td>
           </tr>
         </tfoot>
       </table>
     </div>
+    <p id="vibAviso" class="hint note hidden"></p>
     <div id="ripteWarn" class="warn hidden"></div>
   </section>
 
   <section class="card">
-    <h2>Tasa de interés</h2>
-    <div class="grid grid-2">
-      <label>Monto de tasa de interés
-        <input type="number" id="tasaManual" step="0.01" placeholder="0,00" />
-        <small>Ingresá el monto manualmente.</small>
+    <h2>RIPTE (2) — interés del ingreso base</h2>
+    <p class="hint">Art. 12 inc. 2 de la Ley 24.557 (DNU 669/19), con la metodología del Anexo I de la
+      Res. SSN 332/2023: interés <strong>simple</strong>, sumando las variaciones <strong>diarias</strong>
+      del RIPTE entre la PMI y la fecha de corte. Cada mes usa la variación de tres meses antes
+      (<code>IND[m−3] / IND[m−4] − 1</code>), dividida por los días de ese mes. No se capitaliza y no es
+      un cociente de índices entre las dos puntas.</p>
+    <div class="grid grid-4">
+      <div class="kpi"><span>Días del período</span><strong id="kpiRipte2Dias">—</strong></div>
+      <div class="kpi"><span>Acumulado</span><strong id="kpiRipte2Var">—</strong></div>
+      <div class="kpi"><span>Coeficiente</span><strong id="kpiRipte2Coef">—</strong></div>
+      <div class="kpi"><span>Interés (RIPTE 2)</span><strong id="kpiRipte2Monto">—</strong></div>
+    </div>
+    <details id="ripte2Detalle" class="detalle hidden">
+      <summary id="ripte2Resumen">Detalle mes a mes</summary>
+      <div class="table-wrap scroll">
+        <table id="tblRipte2" class="data">
+          <thead>
+            <tr>
+              <th>Mes</th><th>Variación usada</th><th>Tasa mensual</th>
+              <th>Tasa diaria</th><th>Días</th><th>Aporte</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </details>
+    <div class="grid grid-2" style="margin-top: 12px;">
+      <label class="check">
+        <input type="checkbox" id="tasaManualOn" />
+        Ingresar el monto a mano en lugar de calcularlo por RIPTE
+      </label>
+      <label>Monto de interés (manual)
+        <input type="number" id="tasaManual" step="0.01" placeholder="0,00" disabled />
+        <small>Solo para reproducir una liquidación puntual.</small>
       </label>
     </div>
+    <div id="ripte2Warn" class="warn hidden"></div>
+  </section>
+
+  <section class="card">
+    <h2>Piso mínimo (Res. SRT)</h2>
+    <p class="hint">Piso mínimo vigente a la fecha de la PMI × grado de ILP, actualizado por RIPTE
+      desde el mes de la PMI hasta la liquidación — el mismo coeficiente que arrastra al ingreso base,
+      para que la comparación sea entre valores a la misma fecha. Si la fórmula da menos que el piso,
+      se abona el piso.</p>
+    <div class="grid grid-2">
+      <label class="check">
+        <input type="checkbox" id="actualizarPiso" checked />
+        Actualizar el piso por RIPTE hasta la fecha de liquidación
+      </label>
+    </div>
+    <div class="grid grid-4" style="margin-top: 12px;">
+      <div class="kpi"><span>Piso base (norma)</span><strong id="kpiPisoBase">—</strong></div>
+      <div class="kpi"><span>Norma aplicable</span><strong id="kpiPisoNorma">—</strong></div>
+      <div class="kpi"><span>Coef. RIPTE (2)</span><strong id="kpiPisoCoef">—</strong></div>
+      <div class="kpi"><span>Piso mínimo</span><strong id="kpiPiso">—</strong></div>
+    </div>
+    <div id="pisoWarn" class="warn hidden"></div>
   </section>
 
   <section class="card">
@@ -105,20 +165,56 @@
 
   <section class="card result">
     <h2>Resultado</h2>
-    <div class="grid grid-4">
-      <div class="kpi"><span>VIB</span><strong id="kpiVib">—</strong></div>
-      <div class="kpi"><span>VIB + Tasa</span><strong id="kpiVibTasa">—</strong></div>
-      <div class="kpi"><span>Factor edad (65/edad)</span><strong id="kpiFactorEdad">—</strong></div>
-      <div class="kpi"><span>Resultado fórmula</span><strong id="kpiResultado">—</strong></div>
+
+    <h3 class="paso"><span class="paso-num">1</span> Ingreso base</h3>
+    <div class="grid grid-3">
+      <div class="kpi"><span>Ingreso base (RIPTE 1)</span><strong id="kpiVib">—</strong></div>
+      <div class="kpi"><span>Actualizado a la liquidación (RIPTE 2)</span><strong id="kpiVibTasa">—</strong></div>
+      <div class="kpi"><span>Factor edad (65 / edad)</span><strong id="kpiFactorEdad">—</strong></div>
     </div>
-    <div class="grid grid-3" style="margin-top: 12px;">
-      <div class="kpi"><span>Días desde siniestro</span><strong id="kpiDias">—</strong></div>
-      <div class="kpi"><span>Interés sentencia</span><strong id="kpiInteresSentencia">—</strong></div>
+
+    <h3 class="paso"><span class="paso-num">2</span> Fórmula o piso mínimo: se paga el mayor</h3>
+    <div class="grid grid-2">
+      <div class="kpi comparado" id="cardFormula">
+        <span>Fórmula SRT <em class="rige-tag">Rige</em></span>
+        <strong id="kpiBase">—</strong>
+        <small>53 × ingreso actualizado × % ILP × factor edad</small>
+      </div>
+      <div class="kpi comparado" id="cardPiso">
+        <span>Piso mínimo <em class="rige-tag">Rige</em></span>
+        <strong id="kpiPisoResultado">—</strong>
+        <small id="kpiPisoDetalle">Resolución vigente a la PMI × % ILP × coef. RIPTE (2)</small>
+      </div>
+    </div>
+
+    <h3 class="paso"><span class="paso-num">3</span> Indemnización administrativa</h3>
+    <div class="grid grid-2">
+      <div class="kpi">
+        <span>Adicional de pago único (20 %)</span>
+        <strong id="kpiAdicional">—</strong>
+        <small id="kpiAdicionalDetalle">Se suma salvo que la contingencia sea in itinere</small>
+      </div>
+      <div class="kpi destacado"><span>Indemnización</span><strong id="kpiResultado">—</strong></div>
+    </div>
+
+    <h3 class="paso"><span class="paso-num">4</span> Interés de sentencia <span class="paso-nota">(solo si se cargó una tasa)</span></h3>
+    <div class="grid grid-4">
+      <div class="kpi"><span>Tasa anual</span><strong id="kpiTasaSentencia">—</strong></div>
+      <div class="kpi"><span>Días (siniestro → fecha hasta)</span><strong id="kpiDias">—</strong></div>
+      <div class="kpi"><span>Interés de sentencia</span><strong id="kpiInteresSentencia">—</strong></div>
       <div class="kpi total"><span>Total final</span><strong id="kpiTotal">—</strong></div>
     </div>
     <div class="formula-eval">
       <span class="lbl">Fórmula aplicada:</span>
       <code id="formulaPreview">—</code>
+    </div>
+    <div class="formula-eval">
+      <span class="lbl">RIPTE (2):</span>
+      <code id="ripte2Preview">—</code>
+    </div>
+    <div class="formula-eval">
+      <span class="lbl">Piso mínimo:</span>
+      <code id="pisoPreview">—</code>
     </div>
     <div class="formula-eval">
       <span class="lbl">Fórmula de sentencia:</span>
@@ -137,9 +233,12 @@
   <section class="card">
     <h2>Fórmula de cálculo</h2>
     <p class="hint">Variables disponibles:
-      <code>VIB</code>, <code>TASA</code>, <code>INC</code> (decimal), <code>EDAD</code>,
-      <code>FACTOR_EDAD</code> (=65/EDAD), <code>EN_ITINERE</code> (true/false).
-      Función disponible: <code>IF(cond, a, b)</code>. Operadores: <code>+ - * /</code>, paréntesis,
+      <code>VIB</code>, <code>TASA</code> (interés del RIPTE 2), <code>INC</code> (decimal), <code>EDAD</code>,
+      <code>FACTOR_EDAD</code> (=65/EDAD), <code>EN_ITINERE</code> (true/false),
+      <code>BASE</code> (=53 × (VIB+TASA) × INC × FACTOR_EDAD),
+      <code>PISO</code> (piso mínimo ya multiplicado por el grado de ILP).
+      Funciones: <code>IF(cond, a, b)</code>, <code>MAX(a, b)</code>, <code>MIN(a, b)</code>.
+      Operadores: <code>+ - * /</code>, paréntesis,
       comparaciones <code>&gt; &lt; &gt;= &lt;= == !=</code>.
     </p>
     <textarea id="formulaEditor" rows="4" spellcheck="false"></textarea>
@@ -172,9 +271,28 @@
     </div>
   </section>
 
+  <section class="card">
+    <h2>Pisos mínimos (Res. SRT)</h2>
+    <p class="hint">Piso mínimo del art. 14, ap. 2, incs. a) y b) de la Ley 24.557, por semestre de PMI.
+      <code>Monto</code> se multiplica por el grado de ILP y se actualiza por RIPTE desde el mes de la
+      PMI hasta la fecha de liquidación.</p>
+    <div class="actions">
+      <button id="btnAddPiso">Agregar fila</button>
+      <button id="btnExportPisos">Exportar JSON</button>
+      <button id="btnResetPisos">Restaurar semilla</button>
+      <span id="pisoStatus" class="status"></span>
+    </div>
+    <div class="table-wrap scroll">
+      <table id="tblPisos" class="data editable">
+        <thead><tr><th>Desde (PMI)</th><th>Hasta (PMI)</th><th>Monto</th><th>Norma</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
   <section class="card danger">
     <h2>Zona peligrosa</h2>
-    <p class="hint">Restablece la configuración (RIPTE y fórmula) a los valores semilla del Excel original.</p>
+    <p class="hint">Restablece la configuración (RIPTE, pisos mínimos y fórmula) a los valores semilla.</p>
     <button id="btnResetAll" class="danger-btn">Restablecer todo</button>
   </section>
 </main>
@@ -182,6 +300,7 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="seed-data.js"></script>
+<script src="calculo.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

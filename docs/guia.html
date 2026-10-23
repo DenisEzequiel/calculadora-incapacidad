@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Guía de la calculadora</title>
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --surface-2: #f0f1ee;
+    --text: #1c1d1f;
+    --muted: #5d6066;
+    --border: #dfe0dc;
+    --accent: #1f5fae;
+    --accent-soft: #e6eef8;
+    --ok: #1e7a4a;
+    --ok-soft: #e4f3ea;
+    --warn: #8a5a00;
+    --warn-soft: #fbf1dc;
+    --danger: #a42828;
+    --danger-soft: #f9e5e5;
+    --code-bg: #eef0f3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141517;
+      --surface: #1c1e21;
+      --surface-2: #24272b;
+      --text: #e8e9eb;
+      --muted: #a2a6ad;
+      --border: #33363b;
+      --accent: #7fb0ec;
+      --accent-soft: #1d2b3d;
+      --ok: #6fcf9a;
+      --ok-soft: #17301f;
+      --warn: #e6b45c;
+      --warn-soft: #33290f;
+      --danger: #f08a8a;
+      --danger-soft: #3a1c1c;
+      --code-bg: #262a30;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141517;
+    --surface: #1c1e21;
+    --surface-2: #24272b;
+    --text: #e8e9eb;
+    --muted: #a2a6ad;
+    --border: #33363b;
+    --accent: #7fb0ec;
+    --accent-soft: #1d2b3d;
+    --ok: #6fcf9a;
+    --ok-soft: #17301f;
+    --warn: #e6b45c;
+    --warn-soft: #33290f;
+    --danger: #f08a8a;
+    --danger-soft: #3a1c1c;
+    --code-bg: #262a30;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .layout {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 16px 80px;
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 40px;
+  }
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    nav.toc { position: static !important; border: 0 !important; padding: 0 0 8px !important; }
+  }
+
+  header.hero {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 48px 16px 28px;
+  }
+  header.hero .kicker {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  header.hero h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; margin: 6px 0 12px; }
+  header.hero p { color: var(--muted); max-width: 70ch; margin: 0; }
+
+  nav.toc {
+    position: sticky;
+    top: 16px;
+    align-self: start;
+    font-size: 14px;
+    border-right: 1px solid var(--border);
+    padding: 4px 16px 4px 0;
+  }
+  nav.toc strong { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 0 4px; }
+  nav.toc strong:first-child { margin-top: 0; }
+  nav.toc a { display: block; color: var(--text); text-decoration: none; padding: 3px 0; }
+  nav.toc a:hover { color: var(--accent); }
+
+  main section { padding-top: 8px; }
+  h2 {
+    font-size: 26px;
+    margin: 48px 0 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  main > section:first-child h2 { margin-top: 0; border-top: 0; padding-top: 0; }
+  h3 { font-size: 19px; margin: 32px 0 6px; }
+  p, li { max-width: 75ch; }
+  a { color: var(--accent); }
+  code {
+    font: 0.9em/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 14px 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font: 14px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+  pre code { background: none; padding: 0; }
+
+  .lead { color: var(--muted); margin-top: 0; }
+
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: stretch;
+    margin: 20px 0;
+  }
+  .flow .node {
+    flex: 1 1 140px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  .flow .node b { display: block; font-size: 13px; color: var(--accent); }
+  .flow .arrow { align-self: center; color: var(--muted); }
+  @media (max-width: 600px) { .flow .arrow { display: none; } }
+
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin: 20px 0;
+  }
+  .step h3 { margin-top: 0; display: flex; gap: 10px; align-items: baseline; }
+  .step h3 .n {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--surface);
+    font-size: 14px;
+  }
+  .formula {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 6px;
+    font: 15px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace;
+    overflow-x: auto;
+    margin: 12px 0;
+  }
+  .ejemplo {
+    background: var(--surface-2);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-top: 12px;
+    font-size: 15px;
+  }
+  .ejemplo > b:first-child { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 4px; }
+
+  .callout { border-radius: 8px; padding: 12px 16px; margin: 16px 0; }
+  .callout.warn { background: var(--warn-soft); border-left: 3px solid var(--warn); }
+  .callout.danger { background: var(--danger-soft); border-left: 3px solid var(--danger); }
+  .callout.ok { background: var(--ok-soft); border-left: 3px solid var(--ok); }
+  .callout p { margin: 4px 0; }
+
+  .table-wrap { overflow-x: auto; margin: 12px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; background: var(--surface); }
+  th, td { border-bottom: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--surface-2); font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.total td { font-weight: 700; }
+
+  ol.pasos { padding-left: 22px; }
+  ol.pasos > li { margin-bottom: 10px; }
+  .ui { font-weight: 600; background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: 0 6px; font-size: .92em; white-space: nowrap; }
+
+  .theme-btn {
+    position: fixed; top: 12px; right: 12px;
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 10px; cursor: pointer; font-size: 14px;
+  }
+  footer { color: var(--muted); font-size: 13px; margin-top: 56px; }
+</style>
+</head>
+<body>
+<button class="theme-btn" id="themeBtn" type="button" aria-label="Cambiar tema">◐ Tema</button>
+
+<header class="hero">
+  <div class="kicker">Calculadora de Incapacidad · Guía</div>
+  <h1>Cómo calcula, cómo se usa y cómo se administra</h1>
+  <p>Indemnización por Incapacidad Laboral Permanente (ILP) parcial de hasta el 50 %, régimen
+    administrativo: Ley 24.557 art. 12 y 14 ap. 2 inc. a, Ley 26.773 art. 3, DNU 669/19,
+    Res. SSN 1039/2019 y Res. SSN 332/2023 Anexo I.</p>
+</header>
+
+<div class="layout">
+  <nav class="toc" aria-label="Contenido">
+    <strong>El cálculo</strong>
+    <a href="#resumen">Resumen</a>
+    <a href="#paso1">1 · Edad y factor edad</a>
+    <a href="#paso2">2 · Ingreso base (RIPTE 1)</a>
+    <a href="#paso3">3 · Interés (RIPTE 2)</a>
+    <a href="#paso4">4 · Fórmula SRT</a>
+    <a href="#paso5">5 · Piso mínimo</a>
+    <a href="#paso6">6 · Mayor + adicional 20 %</a>
+    <a href="#paso7">7 · Interés de sentencia</a>
+    <a href="#ejemplo">Ejemplo completo</a>
+    <a href="#avisos">Avisos y bloqueos</a>
+    <strong>Uso</strong>
+    <a href="#uso">Paso a paso del usuario</a>
+    <a href="#informes">PDF y Excel</a>
+    <strong>Administración</strong>
+    <a href="#datos">Dónde viven los datos</a>
+    <a href="#admin-ripte">Tabla RIPTE</a>
+    <a href="#admin-pisos">Pisos mínimos</a>
+    <a href="#admin-formula">Fórmula</a>
+    <a href="#admin-reset">Restaurar</a>
+    <a href="#mantenimiento">Mantenimiento periódico</a>
+  </nav>
+
+  <main>
+    <!-- ====================================================== -->
+    <section id="resumen">
+      <h2>Resumen del cálculo</h2>
+      <p class="lead">El monto surge de comparar dos valores y pagar el mayor: el que da la fórmula de
+        la SRT y el piso mínimo vigente a la fecha de la PMI (primera manifestación invalidante, es
+        decir, la fecha del siniestro). Ambos se expresan a la fecha de liquidación con el
+        <strong>mismo</strong> coeficiente, para comparar valores de la misma fecha.</p>
+
+      <div class="flow" role="list">
+        <div class="node" role="listitem"><b>Entrada</b>Sueldos, fechas, % ILP, in itinere</div>
+        <span class="arrow" aria-hidden="true">→</span>
+        <div class="node" role="listitem"><b>RIPTE 1</b>Sueldos al mes de la PMI → ingreso base</div>
+        <span class="arrow" aria-hidden="true">→</span>
+        <div class="node" role="listitem"><b>RIPTE 2</b>Interés simple diario hasta la liquidación</div>
+        <span class="arrow" aria-hidden="true">→</span>
+        <div class="node" role="listitem"><b>Fórmula vs piso</b>Se toma el mayor</div>
+        <span class="arrow" aria-hidden="true">→</span>
+        <div class="node" role="listitem"><b>+20 %</b>Salvo in itinere</div>
+      </div>
+
+      <div class="callout warn">
+        <p><strong>Las dos actualizaciones por RIPTE son distintas.</strong> La primera lleva cada
+          sueldo al mes de la PMI con un cociente de índices. La segunda suma variaciones diarias
+          con tres meses de rezago. Usar el cociente de índices también en la segunda sobreestima
+          el interés unas seis veces.</p>
+      </div>
+    </section>
+
+    <!-- ====================================================== -->
+    <section id="paso1" class="step">
+      <h3><span class="n">1</span> Edad y factor edad</h3>
+      <p>La edad es la cumplida <strong>a la fecha del siniestro</strong> (no a la de liquidación).</p>
+      <div class="formula">FACTOR_EDAD = 65 / EDAD</div>
+      <div class="ejemplo"><b>Ejemplo</b>
+        Nacido el 19/04/1974, siniestro el 16/06/2021 → 47 años → 65 / 47 = <strong>1,382979</strong>.
+      </div>
+    </section>
+
+    <section id="paso2" class="step">
+      <h3><span class="n">2</span> Ingreso base — RIPTE (1)</h3>
+      <p>Art. 12 inc. 1. Se toman los 12 meses <strong>anteriores</strong> al mes del siniestro
+        (el mes del siniestro no se incluye). Cada sueldo bruto se lleva al mes de la PMI:</p>
+      <div class="formula">coef(mes) = IND[mes de la PMI] / IND[mes del sueldo]<br>
+        sueldo actualizado = sueldo × coef(mes)<br>
+        VIB = Σ sueldos actualizados de los meses incluidos / cantidad de meses incluidos</div>
+      <p>Cada mes tiene una casilla <em>Incluido</em>. Por defecto vienen los 12 tildados y el
+        divisor es 12; un mes incluido sin sueldo o en cero cuenta como cero y <strong>no</strong>
+        achica el divisor. Para promediar menos de 12 meses (por ejemplo, una relación laboral más
+        corta) destildá los meses que no correspondan: no suman ni cuentan en el divisor.</p>
+      <div class="ejemplo"><b>Ejemplo</b> PMI en 2021-06 → IND[2021-06] = 9.660,13
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Período</th><th class="num">Sueldo</th><th class="num">Índice</th><th class="num">Coef.</th><th class="num">Actualizado</th></tr></thead>
+            <tbody>
+              <tr><td>2021-05</td><td class="num">$ 22.765,50</td><td class="num">9.311,61</td><td class="num">1,037429</td><td class="num">$ 23.617,58</td></tr>
+              <tr><td>2021-01</td><td class="num">$ 19.564,50</td><td class="num">7.784,10</td><td class="num">1,241008</td><td class="num">$ 24.279,70</td></tr>
+              <tr><td>2020-12</td><td class="num">$ 29.346,75</td><td class="num">7.643,41</td><td class="num">1,263851</td><td class="num">$ 37.089,91</td></tr>
+              <tr><td>2020-06</td><td class="num">$ 26.678,25</td><td class="num">6.670,93</td><td class="num">1,448093</td><td class="num">$ 38.632,60</td></tr>
+              <tr><td colspan="4">Los otros 8 meses</td><td class="num">$ 0,00</td></tr>
+              <tr class="total"><td colspan="4">VIB = $ 123.619,79 / 12</td><td class="num">$ 10.301,65</td></tr>
+            </tbody>
+          </table>
+        </div>
+        Con los 12 meses incluidos los 8 meses vacíos cuentan como cero. Si en cambio se destildan
+        esos 8 meses, el VIB es $ 123.619,79 / 4 = <strong>$ 30.904,95</strong>.
+      </div>
+    </section>
+
+    <section id="paso3" class="step">
+      <h3><span class="n">3</span> Interés del ingreso base — RIPTE (2)</h3>
+      <p>Art. 12 inc. 2 (DNU 669/19), con la metodología del Anexo I de la Res. SSN 332/2023:
+        interés <strong>simple</strong>, sin capitalizar, sumando variaciones <strong>diarias</strong>
+        del RIPTE desde la PMI (inclusive) hasta la fecha de liquidación (exclusive).</p>
+      <div class="formula">tasaMes(m) = IND[m−3] / IND[m−4] − 1 &nbsp;&nbsp;← rezago de 3 meses<br>
+        tasaDiaria(m) = tasaMes(m) / días del mes m<br>
+        acumulado = Σ tasaDiaria(m) × días transcurridos en m<br>
+        coef = 1 + acumulado<br>
+        TASA = VIB × (coef − 1)</div>
+      <p>Por el rezago, el mes de liquidación nunca necesita su propio índice: se puede liquidar
+        aunque el RIPTE se publique con atraso.</p>
+      <div class="ejemplo"><b>Ejemplo</b> 16/06/2021 → 21/09/2026: 1.923 días.
+        <ul>
+          <li>Junio 2021 usa la variación feb → mar 2021: 4,8632 % / 30 × 15 días.</li>
+          <li>Julio 2021 usa mar → abr 2021: 6,1903 % / 31 × 31 días. Y así cada mes.</li>
+        </ul>
+        Acumulado <strong>335,9204 %</strong> → coef <strong>4,359204</strong> →
+        TASA = $ 10.301,65 × 3,359204 = <strong>$ 34.605,35</strong>.<br>
+        Ingreso base actualizado: VIB + TASA = $ 44.907,00.
+      </div>
+      <p>En la calculadora, <span class="ui">Detalle mes a mes</span> muestra cada tramo.
+        También se puede ingresar el interés a mano para reproducir una liquidación puntual; en ese
+        caso el coeficiente que se aplica al piso es el implícito: <code>1 + monto manual / VIB</code>.</p>
+    </section>
+
+    <section id="paso4" class="step">
+      <h3><span class="n">4</span> Fórmula SRT (sin piso)</h3>
+      <div class="formula">BASE = 53 × (VIB + TASA) × INC × FACTOR_EDAD</div>
+      <p><code>INC</code> es el grado de ILP en decimal: 3,63 % → 0,0363.</p>
+      <div class="ejemplo"><b>Ejemplo</b>
+        53 × $ 44.907,00 × 0,0363 × 1,382979 = <strong>$ 119.484,62</strong>
+      </div>
+    </section>
+
+    <section id="paso5" class="step">
+      <h3><span class="n">5</span> Piso mínimo</h3>
+      <p>Se busca la resolución SRT cuyo rango <em>desde–hasta</em> contiene la fecha de la
+        <strong>PMI</strong> (nunca la vigente a la liquidación). Su monto se multiplica por el
+        grado de ILP y se actualiza con el <strong>mismo coeficiente</strong> del paso 3.</p>
+      <div class="formula">PISO = monto de la resolución × INC × coef</div>
+      <p>Si se destilda <span class="ui">Actualizar el piso por RIPTE</span>, el coeficiente es 1.</p>
+      <div class="ejemplo"><b>Ejemplo</b>
+        PMI 16/06/2021 → Res. SRT 7/2021: $ 3.991.300 × 0,0363 = $ 144.884,19 →
+        × 4,359204 = <strong>$ 631.579,81</strong>
+      </div>
+    </section>
+
+    <section id="paso6" class="step">
+      <h3><span class="n">6</span> Se paga el mayor y se suma el adicional</h3>
+      <div class="formula">IF(EN_ITINERE, MAX(BASE, PISO), MAX(BASE, PISO) × 1,2)</div>
+      <p>Se paga el mayor entre fórmula y piso (nunca la suma). La pantalla marca con
+        <span class="ui">Rige</span> cuál de los dos aplicó. Si la contingencia <strong>no</strong>
+        es in itinere se adiciona un 20 % (Ley 26.773 art. 3).</p>
+      <div class="ejemplo"><b>Ejemplo</b>
+        MAX($ 119.484,62; $ 631.579,81) → <strong>rige el piso</strong>.
+        <ul>
+          <li>In itinere: indemnización <strong>$ 631.579,81</strong>.</li>
+          <li>No in itinere: + 20 % ($ 126.315,96) = <strong>$ 757.895,77</strong>.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="paso7" class="step">
+      <h3><span class="n">7</span> Interés de sentencia (opcional)</h3>
+      <p>Fuera del régimen administrativo. Solo se aplica si se carga una tasa anual.</p>
+      <div class="formula">interés = indemnización × tasa anual × (días desde el siniestro hasta "Fecha hasta" / 365)<br>
+        total final = indemnización + interés</div>
+      <p>Si no se completa <span class="ui">Fecha hasta</span>, se usa la fecha de hoy.</p>
+    </section>
+
+    <!-- ====================================================== -->
+    <section id="ejemplo">
+      <h2>Ejemplo completo</h2>
+      <p class="lead">Caso de referencia de la especificación, cubierto por los tests automáticos
+        (<code>tests/liquidacion.test.js</code>). Siniestro 16/06/2021, nacimiento 19/04/1974,
+        ILP 3,63 %, liquidación 21/09/2026.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Componente</th><th class="num">Valor</th></tr></thead>
+          <tbody>
+            <tr><td>Edad / factor edad</td><td class="num">47 / 1,382979</td></tr>
+            <tr><td>Ingreso base (RIPTE 1)</td><td class="num">$ 10.301,65</td></tr>
+            <tr><td>Coeficiente RIPTE 2 (1.923 días)</td><td class="num">4,359204</td></tr>
+            <tr><td>Interés RIPTE 2</td><td class="num">$ 34.605,35</td></tr>
+            <tr><td>Fórmula SRT</td><td class="num">$ 119.484,62</td></tr>
+            <tr><td>Piso mínimo actualizado</td><td class="num">$ 631.579,81</td></tr>
+            <tr><td>Rige</td><td class="num">Piso</td></tr>
+            <tr class="total"><td>Indemnización (in itinere)</td><td class="num">$ 631.579,81</td></tr>
+            <tr class="total"><td>Indemnización (no in itinere, +20 %)</td><td class="num">$ 757.895,77</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="avisos">
+      <h2>Avisos y bloqueos</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Situación</th><th>Qué hace la calculadora</th></tr></thead>
+          <tbody>
+            <tr><td>Falta un índice RIPTE para algún mes del período del interés</td>
+              <td><strong>No entrega resultado.</strong> Informa los meses faltantes; no estima ni extrapola.</td></tr>
+            <tr><td>Falta el índice de algún mes de sueldo o del mes de la PMI</td>
+              <td>Aviso en la tabla de sueldos; ese sueldo no suma al ingreso base.</td></tr>
+            <tr><td>Hay meses incluidos con el sueldo vacío</td>
+              <td>Aviso: cuentan como cero y el promedio igual se divide por la cantidad de meses incluidos.</td></tr>
+            <tr><td>Hay meses destildados en <em>Incluido</em></td>
+              <td>Aviso con la cantidad de meses sobre la que se promedia; el divisor se ve al pie de la tabla.</td></tr>
+            <tr><td>Ningún mes incluido</td>
+              <td>Aviso y no calcula.</td></tr>
+            <tr><td>No hay piso cargado para la fecha de la PMI</td>
+              <td>Aviso; el piso vale 0 y rige la fórmula.</td></tr>
+            <tr><td>% ILP mayor a 50</td>
+              <td>Aviso de que esta variante no corresponde; el cálculo se entrega igual.</td></tr>
+            <tr><td>Fecha de liquidación no posterior a la PMI</td>
+              <td>Sin interés RIPTE 2 (coef = 1).</td></tr>
+            <tr><td>Faltan fecha de siniestro, nacimiento, % o ningún sueldo cargado</td>
+              <td>Mensaje y no calcula.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ====================================================== -->
+    <section id="uso">
+      <h2>Uso: paso a paso del usuario</h2>
+      <p class="lead">Todo ocurre en la pestaña <span class="ui">Calculadora</span>. Los montos se
+        recalculan a medida que se completan los campos; el resultado final se obtiene con
+        <span class="ui">Calcular</span>.</p>
+      <ol class="pasos">
+        <li><strong>Datos del siniestro.</strong> Completá <em>Nombre</em>, <em>Fecha del siniestro</em>
+          (la PMI), <em>Fecha de nacimiento</em> (debajo se ve la edad calculada), <em>% Incapacidad</em>
+          en porcentaje (ej. <code>3.63</code>) y si es <em>in itinere</em>. El <em>Período base</em>
+          se completa solo con el mes del siniestro.</li>
+        <li><strong>Fecha de liquidación.</strong> La fecha de puesta a disposición. Cierra el
+          período del RIPTE (2) y actualiza el piso. Si queda vacía se usa la fecha de hoy.</li>
+        <li><strong>Sueldos.</strong> Al cargar la fecha del siniestro aparece la tabla con los 12
+          meses previos (del más reciente al más antiguo). Ingresá el sueldo bruto de cada mes;
+          la tabla muestra el índice, el coeficiente y el sueldo actualizado, y al pie el VIB.
+          Los meses sin sueldo se pueden dejar vacíos (cuentan como cero). Para promediar menos
+          de 12 meses, destildá <em>Incluido</em> en los meses que no corresponden: el pie de la
+          tabla muestra por cuántos meses se divide.</li>
+        <li><strong>RIPTE (2).</strong> Revisá los días, el acumulado, el coeficiente y el interés.
+          Abrí <span class="ui">Detalle mes a mes</span> para controlar cada tramo. Usá
+          <em>Ingresar el monto a mano</em> solo para reproducir una liquidación puntual.</li>
+        <li><strong>Piso mínimo.</strong> Verificá la norma aplicable y el piso. Dejá tildado
+          <em>Actualizar el piso por RIPTE</em> salvo que necesites el piso sin actualizar.</li>
+        <li><strong>Fórmula de sentencia (opcional).</strong> Cargá la tasa anual en % (ej. <code>60</code>)
+          y la <em>Fecha hasta</em>. Vacía o en 0, no se aplica.</li>
+        <li><strong>Calcular.</strong> El bloque <em>Resultado</em> muestra los cuatro pasos:
+          ingreso base, fórmula vs piso (con la etiqueta <span class="ui">Rige</span>), indemnización
+          con el adicional, e interés de sentencia con el total final. Debajo, cada fórmula aparece
+          con los números reemplazados para poder controlarla.</li>
+      </ol>
+      <div class="callout ok">
+        <p><span class="ui">Limpiar</span> borra todos los campos (pide confirmación).
+          El botón ☾ / ☀ de la barra superior cambia entre modo claro y oscuro.</p>
+      </div>
+    </section>
+
+    <section id="informes">
+      <h3>Informes: PDF y Excel</h3>
+      <ul>
+        <li><span class="ui">Descargar PDF</span> — requiere haber calculado antes. Arma un informe con
+          los datos del siniestro, sueldos actualizados, RIPTE (2), piso, resolución aplicada,
+          resultado e interés de sentencia.</li>
+        <li><span class="ui">Descargar Excel</span> — requiere nombre y fecha de siniestro. Reproduce la
+          planilla original con fórmulas de Excel, para revisión o archivo.</li>
+      </ul>
+      <p>Ambas descargas usan librerías externas (jsPDF y SheetJS): necesitan conexión a internet.</p>
+    </section>
+
+    <!-- ====================================================== -->
+    <section id="datos">
+      <h2>Administración</h2>
+      <p class="lead">La pestaña <span class="ui">Administración</span> mantiene las tres cosas
+        de las que depende el cálculo: la tabla RIPTE, la tabla de pisos mínimos y la fórmula.</p>
+
+      <h3>Dónde viven los datos</h3>
+      <div class="callout danger">
+        <p><strong>Los cambios se guardan solo en el navegador de quien los hace</strong>
+          (<code>localStorage</code>). No se comparten con otros usuarios ni con otras computadoras,
+          y se pierden si se borran los datos del sitio.</p>
+        <p>La pestaña Administración no tiene control de acceso: cualquier usuario puede modificar
+          su propia copia. Un índice o piso mal cargado cambia una indemnización sin aviso.</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Dato</th><th>Clave en el navegador</th><th>Valor inicial</th></tr></thead>
+          <tbody>
+            <tr><td>Índices RIPTE</td><td><code>calc-incap.ripte</code></td><td><code>SEED_RIPTE</code> en <code>seed-data.js</code></td></tr>
+            <tr><td>Pisos mínimos</td><td><code>calc-incap.pisos</code></td><td><code>SEED_PISOS</code> en <code>seed-data.js</code></td></tr>
+            <tr><td>Fórmula</td><td><code>calc-incap.formula</code></td><td><code>IF(EN_ITINERE, MAX(BASE, PISO), MAX(BASE, PISO) * 1.2)</code></td></tr>
+            <tr><td>Tema</td><td><code>calc-incap.theme</code></td><td>Preferencia del sistema</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Los valores de <code>seed-data.js</code> se usan <strong>solo cuando el navegador no tiene
+        nada guardado</strong>. Un usuario que ya editó alguna tabla no recibe una semilla nueva hasta
+        que use <span class="ui">Restaurar semilla</span> o <span class="ui">Restablecer todo</span>.</p>
+    </section>
+
+    <section id="admin-ripte">
+      <h3>Tabla RIPTE</h3>
+      <ul>
+        <li><strong>Editar:</strong> cada fila tiene período (<code>AAAA-MM</code>) e índice. Los
+          cambios se guardan al salir de la celda. ✕ elimina la fila <em>sin confirmar</em>.</li>
+        <li><span class="ui">Agregar fila</span> agrega una fila vacía.
+          <span class="ui">Filtrar período…</span> busca por texto (ej. <code>2026</code>).</li>
+        <li><span class="ui">Subir Excel/CSV</span> <strong>reemplaza la tabla completa</strong> con el
+          contenido de la primera hoja. Período en la columna A (<code>AAAA-MM</code>,
+          <code>AAAA-MM-DD</code>, <code>DD/MM/AAAA</code>, <code>MM/AAAA</code> o fecha de Excel);
+          índice en la columna D o, si está vacía, en la B. La fila de encabezado se detecta si
+          contiene "Período" en las primeras 5 filas.</li>
+        <li><span class="ui">Exportar JSON</span> descarga la tabla como respaldo.</li>
+      </ul>
+      <div class="callout warn">
+        <p><strong>Cargá el índice, no el monto en pesos.</strong> Son series distintas:
+          <code>índice = monto en pesos / 8,7487</code>. Ej. septiembre 2025: $ 1.551.831,75 →
+          índice 177.378,55. Cargar pesos rompe todos los coeficientes.</p>
+      </div>
+    </section>
+
+    <section id="admin-pisos">
+      <h3>Pisos mínimos (Res. SRT)</h3>
+      <p>Cada fila es una resolución semestral: <em>Desde (PMI)</em>, <em>Hasta (PMI)</em>,
+        <em>Monto</em> (el importe que se multiplica por el grado de ILP) y <em>Norma</em>
+        (ej. <code>Res. SRT 39/2026</code>).</p>
+      <ul>
+        <li>Los rangos no deben superponerse ni dejar huecos: se usa la primera fila que contenga
+          la fecha de la PMI.</li>
+        <li>Los semestres van del 1/3 al 31/8 y del 1/9 al último día de febrero.</li>
+        <li>✕ elimina sin confirmar. <span class="ui">Exportar JSON</span> descarga un respaldo;
+          <span class="ui">Restaurar semilla</span> vuelve a la tabla de <code>seed-data.js</code>.</li>
+      </ul>
+    </section>
+
+    <section id="admin-formula">
+      <h3>Fórmula de cálculo</h3>
+      <p>Define cómo se combinan los componentes en el resultado final. La fórmula por defecto
+        responde a la normativa; modificarla solo tiene sentido para reproducir un criterio distinto.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Variable</th><th>Significado</th></tr></thead>
+          <tbody>
+            <tr><td><code>VIB</code></td><td>Ingreso base (paso 2)</td></tr>
+            <tr><td><code>TASA</code></td><td>Interés RIPTE (2) en pesos (paso 3)</td></tr>
+            <tr><td><code>INC</code></td><td>Grado de ILP en decimal</td></tr>
+            <tr><td><code>EDAD</code>, <code>FACTOR_EDAD</code></td><td>Edad a la PMI y 65 / EDAD</td></tr>
+            <tr><td><code>EN_ITINERE</code></td><td><code>true</code> / <code>false</code></td></tr>
+            <tr><td><code>BASE</code></td><td>53 × (VIB + TASA) × INC × FACTOR_EDAD</td></tr>
+            <tr><td><code>PISO</code></td><td>Piso ya multiplicado por INC y actualizado</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Funciones <code>IF(cond, a, b)</code>, <code>MAX</code>, <code>MIN</code>; operadores
+        <code>+ - * /</code>, paréntesis y comparaciones. Cualquier otro nombre o los caracteres
+        <code>; { } [ ] `</code> se rechazan al guardar. <span class="ui">Guardar fórmula</span>
+        la valida antes de guardarla; <span class="ui">Restaurar por defecto</span> vuelve a la original.</p>
+      <p>El adicional que muestra el resultado se calcula como <em>resultado − mayor(fórmula, piso)</em>,
+        así siempre cuadra con lo que devuelva la fórmula.</p>
+    </section>
+
+    <section id="admin-reset">
+      <h3>Restaurar</h3>
+      <p><span class="ui">Restablecer todo</span> (Zona peligrosa) vuelve RIPTE, pisos y fórmula a
+        los valores de <code>seed-data.js</code>. Se pierden los cambios locales: exportá antes los
+        JSON si los necesitás.</p>
+    </section>
+
+    <section id="mantenimiento">
+      <h2>Mantenimiento periódico</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Frecuencia</th><th>Tarea</th><th>Por qué</th></tr></thead>
+          <tbody>
+            <tr><td>Mensual</td><td>Agregar el índice RIPTE del último mes publicado.</td>
+              <td>Sin el índice de 3 y 4 meses antes, el interés de un mes no se puede calcular y no hay resultado.</td></tr>
+            <tr><td>Semestral (marzo y septiembre)</td><td>Agregar la nueva resolución SRT de pisos mínimos.</td>
+              <td>Sin piso para la fecha de la PMI, rige la fórmula aunque el piso fuera mayor.</td></tr>
+            <tr><td>Después de cada cambio</td><td>Recalcular un caso conocido (el ejemplo de esta guía) y comparar.</td>
+              <td>Detecta índices en pesos, errores de tipeo o rangos superpuestos.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>Valores del ejemplo calculados con <code>calculo.js</code> y las tablas de <code>seed-data.js</code>.
+      Esta guía describe el régimen administrativo; una sentencia puede fijar criterios distintos.</footer>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    document.getElementById("themeBtn").addEventListener("click", function () {
+      var actual = root.getAttribute("data-theme") ||
+        (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      root.setAttribute("data-theme", actual === "dark" ? "light" : "dark");
+    });
+  })();
+</script>
+</body>
+</html>

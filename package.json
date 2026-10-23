@@ -1,0 +1,13 @@
+{
+  "name": "calculadora-incapacidad",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Calculadora de Incapacidad Laboral Permanente Parcial menor o igual al 50%",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^0.34.6"
+  }
+}
