@@ -222,7 +222,7 @@ function setupCalc() {
     $("#fechaNacimiento").value = "";
     actualizarEdadCalculada();
     $("#incapacidad").value = "";
-    $("#enItinere").value = "si";
+    $("#enItinere").value = "no";
     $("#periodoBase").value = "";
     $("#tblSueldos tbody").innerHTML = "";
     $("#vibCell").textContent = "—";
