@@ -852,7 +852,7 @@ function descargarPdf() {
   // ---------- Resumen: lo que se paga ----------
   const conSentencia = s.tasaAnualDec > 0;
   const bloques = [
-    ["Indemnización administrativa", money(r.resultado),
+    ["Indemnización", money(r.resultado),
       r.rige === "piso" ? `Rige el piso mínimo (${piso.norma || "—"})` : "Rige la fórmula"],
     ["Interés de sentencia", conSentencia ? money(s.interes) : "—",
       conSentencia ? `Tasa anual ${pct(s.tasaAnualDec)} · ${s.dias} días` : "No se cargó tasa"],
@@ -945,7 +945,7 @@ function descargarPdf() {
   // ---------- 4. Fórmula o piso ----------
   seccion(4, "Fórmula o piso mínimo", "Se paga el mayor de los dos");
   const filaFormula = [
-    "Fórmula SRT",
+    "Fórmula",
     `53 × ${money(base.vib + r2.monto)} × ${num(e.incPct, 2)} % × ${num(r.factorEdad)}`,
     money(r.formulaSinPiso),
     r.rige === "formula" ? "RIGE" : "",
@@ -972,7 +972,7 @@ function descargarPdf() {
     e.enItinere ? "Adicional de pago único (no aplica: in itinere)" : "Adicional de pago único (20 %)",
     money(r.adicional)
   );
-  total("Indemnización administrativa", money(r.resultado), { fuerte: true });
+  total("Indemnización", money(r.resultado), { fuerte: true });
 
   // ---------- 5. Interés de sentencia ----------
   // La sección se mantiene entera: si no entra, pasa completa a la página siguiente.
@@ -1410,7 +1410,7 @@ function descargarExcel() {
       : `suma simple de variaciones diarias, ${ripte2.dias} días (Res. SSN 332/2023)`,
   });
 
-  setCell("D37", { t: "s", v: "Fórmula SRT (sin piso)" });
+  setCell("D37", { t: "s", v: "Fórmula (sin piso)" });
   setCell("E37", { t: "n", f: "53*B22*B25*B24" });
 
   setCell("D38", { t: "s", v: "Resultado fórmula" });
